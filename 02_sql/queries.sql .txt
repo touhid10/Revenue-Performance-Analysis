@@ -1,0 +1,201 @@
+/* =========================================================
+   Revenue & Performance Analysis (SQLite) — corrected to your schema
+   Table: sales
+   Rows: ~51k
+   Columns: snake_case (order_id, order_month, product_name, etc.)
+   ========================================================= */
+
+/* 0) Quick sanity checks */
+SELECT COUNT(*) AS total_rows FROM sales;
+SELECT * FROM sales LIMIT 5;
+
+/* 1) CORE KPIs (Dashboard Cards) */
+
+/* 1.1 Total Revenue */
+SELECT ROUND(SUM(sales), 2) AS total_revenue
+FROM sales;
+
+/* 1.2 Total Profit */
+SELECT ROUND(SUM(profit), 2) AS total_profit
+FROM sales;
+
+/* 1.3 Total Orders (distinct order_id) */
+SELECT COUNT(DISTINCT order_id) AS total_orders
+FROM sales;
+
+/* 1.4 Total Customers (distinct customer_id) */
+SELECT COUNT(DISTINCT customer_id) AS total_customers
+FROM sales;
+
+/* 1.5 Average Order Value (AOV) */
+SELECT 
+  ROUND(SUM(sales) / NULLIF(COUNT(DISTINCT order_id), 0), 2) AS avg_order_value
+FROM sales;
+
+/* 1.6 Average Discount (overall) */
+SELECT ROUND(AVG(discount), 4) AS avg_discount
+FROM sales;
+
+/* 2) TIME TREND */
+
+/* 2.1 Revenue / Profit / Orders by Month */
+SELECT 
+  order_month,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  COUNT(DISTINCT order_id) AS orders
+FROM sales
+GROUP BY order_month
+ORDER BY order_month;
+
+/* 2.2 Month-over-Month (MoM) revenue growth % */
+WITH m AS (
+  SELECT 
+    order_month,
+    SUM(sales) AS revenue
+  FROM sales
+  GROUP BY order_month
+),
+m2 AS (
+  SELECT
+    order_month,
+    revenue,
+    LAG(revenue) OVER (ORDER BY order_month) AS prev_revenue
+  FROM m
+)
+SELECT
+  order_month,
+  ROUND(revenue, 2) AS revenue,
+  ROUND(prev_revenue, 2) AS prev_revenue,
+  ROUND(
+    (revenue - prev_revenue) * 100.0 / NULLIF(prev_revenue, 0),
+    2
+  ) AS mom_growth_pct
+FROM m2
+ORDER BY order_month;
+
+/* 3) CATEGORY & PRODUCT PERFORMANCE */
+
+/* 3.1 Revenue by Category */
+SELECT
+  category,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  COUNT(DISTINCT order_id) AS orders
+FROM sales
+GROUP BY category
+ORDER BY revenue DESC;
+
+/* 3.2 Revenue by Sub-Category */
+SELECT
+  sub_category,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit
+FROM sales
+GROUP BY sub_category
+ORDER BY revenue DESC;
+
+/* 3.3 Top 10 Products by Revenue */
+SELECT
+  product_name,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  SUM(quantity) AS total_qty
+FROM sales
+GROUP BY product_name
+ORDER BY revenue DESC
+LIMIT 10;
+
+/* 3.4 Top 10 Customers by Revenue */
+SELECT
+  customer_name,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  COUNT(DISTINCT order_id) AS orders
+FROM sales
+GROUP BY customer_name
+ORDER BY revenue DESC
+LIMIT 10;
+
+/* 4) REGION / MARKET PERFORMANCE */
+
+/* 4.1 Revenue & Profit by Region */
+SELECT
+  region,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  COUNT(DISTINCT order_id) AS orders
+FROM sales
+GROUP BY region
+ORDER BY revenue DESC;
+
+/* 4.2 Profit by Region (explicit) */
+SELECT
+  region,
+  ROUND(SUM(profit), 2) AS profit
+FROM sales
+GROUP BY region
+ORDER BY profit DESC;
+
+/* 4.3 Revenue & Profit by Market */
+SELECT
+  market,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit
+FROM sales
+GROUP BY market
+ORDER BY revenue DESC;
+
+/* 5) DISCOUNT IMPACT (simple + impressive) */
+
+/* 5.1 Discount bands vs revenue/profit */
+WITH d AS (
+  SELECT
+    CASE
+      WHEN discount = 0 THEN '0%'
+      WHEN discount > 0 AND discount <= 0.10 THEN '0-10%'
+      WHEN discount > 0.10 AND discount <= 0.20 THEN '10-20%'
+      WHEN discount > 0.20 AND discount <= 0.30 THEN '20-30%'
+      ELSE '30%+'
+    END AS discount_band,
+    sales,
+    profit
+  FROM sales
+)
+SELECT
+  discount_band,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  ROUND(AVG(profit), 2) AS avg_profit_per_row
+FROM d
+GROUP BY discount_band
+ORDER BY 
+  CASE discount_band
+    WHEN '0%' THEN 1
+    WHEN '0-10%' THEN 2
+    WHEN '10-20%' THEN 3
+    WHEN '20-30%' THEN 4
+    ELSE 5
+  END;
+
+/* 6) SHIPPING COST CHECK (optional insight) */
+
+/* 6.1 Avg shipping cost by ship_mode */
+SELECT
+  ship_mode,
+  ROUND(AVG(shipping_cost), 2) AS avg_shipping_cost,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit
+FROM sales
+GROUP BY ship_mode
+ORDER BY avg_shipping_cost DESC;
+
+/* 7) BONUS: Segment performance (nice for consultants) */
+SELECT
+  segment,
+  ROUND(SUM(sales), 2) AS revenue,
+  ROUND(SUM(profit), 2) AS profit,
+  COUNT(DISTINCT order_id) AS orders
+FROM sales
+GROUP BY segment
+ORDER BY revenue DESC;
