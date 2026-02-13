@@ -38,3 +38,32 @@ This project presents an end-to-end revenue and performance analysis using trans
 ---
 
 ## 📁 Project Structure
+
+Revenue-Performance-Analysis/
+│
+├── 01_data/
+│ └── sales_cleaned.csv
+│
+├── 02_sql/
+│ └── queries.sql
+│
+├── 03_dashboard/
+│ ├── Revenue_Performance_Dashboard.twbx
+│ ├── dashboard_full.png
+│ ├── dashboard_filtered.png
+│ └── chart_detail.png
+│
+├── 04_report/
+│ └── report.pdf
+
+
+---
+
+## 📈 Dashboard Preview
+
+![Dashboard Overview](03_dashboard/dashboard_full.png)
+
+---
+
+## 🚀 Outcome
+This project demonstrates practical skills in SQL querying, dashboard creation, business analysis, and data-driven decision making suitable for data analyst and business analyst roles.
