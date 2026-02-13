@@ -61,7 +61,7 @@ Revenue-Performance-Analysis/
 
 ## 📈 Dashboard Preview
 
-![Dashboard Overview](Dashboard_Full.png)
+![Dashboard Overview](03_dashboard/Dashboard_Full.png)
 
 ---
 
